@@ -3,7 +3,7 @@ package org.example.highjoin.entities;
 import lombok.Data;
 
 @Data
-public class Nation {
+public class Nation extends Entity{
     private int nNationkey;
 
     private String nName;
@@ -13,5 +13,4 @@ public class Nation {
     private String nComment;
 
     private String nDummy;
-    private transient int s;
 }

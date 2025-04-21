@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 
 @Data
-public class LineItem {
+public class LineItem extends Entity{
     private int lOrderkey;
     private int lPartkey;
     private int lSuppkey;
@@ -24,5 +24,4 @@ public class LineItem {
     private String lShipmode;
     private String lComment;
     private String lDummy;
-    private transient int s;
 }

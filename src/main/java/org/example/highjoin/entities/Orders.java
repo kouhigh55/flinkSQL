@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 
 @Data
-public class Orders {
+public class Orders extends Entity{
     private int oOrderkey;
     private int oCustkey;
     private char oOrderstatus;
@@ -17,5 +17,4 @@ public class Orders {
     private int oShippriority;
     private String oComment;
     private String oDummy;
-    private transient int s;
 }
