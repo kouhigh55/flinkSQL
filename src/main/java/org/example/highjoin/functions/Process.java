@@ -56,6 +56,7 @@ public abstract class Process extends KeyedProcessFunction<Object, Message, Mess
 
 
 
+
         out.collect(value);
     }
 

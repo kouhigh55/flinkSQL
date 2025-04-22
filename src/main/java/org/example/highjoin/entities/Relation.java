@@ -5,7 +5,7 @@ import java.util.HashSet;
 public enum Relation {
     LINEITEM("lineitem", new String[]{}, new String[]{"ORDERS"},
             new String[]{"l_orderkey", "l_returnflag"},
-            "l_orderkey", "l_orderkey"),
+            "l_orderkey", "c_custkey"), // same as group by c_custkey,c_name,c_acctbal,c_phone,n_name,c_address,c_comment
 
     ORDERS("orders", new String[]{"LINEITEM"}, new String[]{"CUSTOMER"},
             new String[]{"o_orderkey", "o_custkey","o_orderdate"},

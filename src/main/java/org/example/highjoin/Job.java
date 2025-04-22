@@ -13,10 +13,7 @@ import org.apache.flink.util.OutputTag;
 import org.example.highjoin.entities.Message;
 import org.example.highjoin.entities.Operation;
 import org.example.highjoin.entities.Relation;
-import org.example.highjoin.functions.CustomerProcess;
-import org.example.highjoin.functions.LineItemProcess;
-import org.example.highjoin.functions.NationProcess;
-import org.example.highjoin.functions.OrdersProcess;
+import org.example.highjoin.functions.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -59,8 +56,8 @@ public class Job {
                 .process(new LineItemProcess());
 
         lineitemS.keyBy(i -> i.getKey())
-                .process(new Q10AggregateProcessFunction())
-                .map(x -> x.getAttributes()[3] + ", " + x.getAttributes()[4] + ", " + x.getAttributes()[5])
+                .process(new GroupbyProcess())
+                .map(x -> x.attr.get("") + ", " + x.getAttributes()[4] + ", " + x.getAttributes()[5])
                 .writeAsText(outputPath, FileSystem.WriteMode.OVERWRITE)
                 .setParallelism(1);
 
