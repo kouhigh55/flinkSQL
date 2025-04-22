@@ -10,7 +10,19 @@ public class Message {
 
     public Operation operation;
 
+    public Relation targetRelation;
+
     public Object keyValue;
+
+    public Message(HashMap<String, Object> attr, Operation operation, Relation targetRelation, Object keyValue) {
+        this.attr = attr;
+        this.operation = operation;
+        this.targetRelation = targetRelation;
+        this.keyValue = keyValue;
+    }
+
+    public Message() {
+    }
 
     // merge two message
     public HashMap<String, Object> merge(Message child) {
@@ -26,4 +38,7 @@ public class Message {
     }
 
 
+    public Object getKey() {
+        return this.keyValue;
+    }
 }

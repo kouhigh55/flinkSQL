@@ -4,19 +4,20 @@ import org.apache.flink.configuration.Configuration;
 import org.example.highjoin.entities.Message;
 import org.example.highjoin.entities.Relation;
 
-public class CustomerProcess extends CoProcess{
+public class LineItemProcess extends CoProcess{
 
 
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
-        relation = Relation.getRelationFromName("CUSTOMER");
+        relation = Relation.getRelationFromName("LINEITEM");
         childNum = relation.children.size();
         isRoot = relation.fathers.isEmpty();
     }
 
     @Override
-    boolean isValid(Message value) {
-        return true;
+    boolean isValid(Message msg) {
+        String lReturnflag = (String) msg.attr.get("l_returnflag");
+        return lReturnflag.equals("R");
     }
 }

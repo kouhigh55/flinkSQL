@@ -14,7 +14,7 @@ import org.example.highjoin.entities.Relation;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public abstract class Process extends KeyedProcessFunction<Object, Message, Message> {
+public abstract class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, Message> {
     // key, array(inserted data)
     MapState<Object, ArrayList<HashMap<String, Object>>> index;
     // key, cnt
@@ -27,6 +27,7 @@ public abstract class Process extends KeyedProcessFunction<Object, Message, Mess
     int childNum;
 
     boolean isRoot = false;
+
 
     @Override
     public void open(Configuration parameters) throws Exception {
@@ -41,22 +42,20 @@ public abstract class Process extends KeyedProcessFunction<Object, Message, Mess
         index = getRuntimeContext().getMapState(indexDescriptor);
         cnt = getRuntimeContext().getMapState(cntDescriptor);
         childAttr = getRuntimeContext().getMapState(childAttrDescriptor);
+
+
     }
 
+    @Override
+    public void processElement1(Message message, KeyedCoProcessFunction<Object, Message, Message, Message>.Context context, Collector<Message> collector) throws Exception {
+        Process.myProcess(message, null, context, collector);
+    }
 
     @Override
-    public void processElement(Message value, KeyedProcessFunction<Object, Message, Message>.Context ctx, Collector<Message> out) throws Exception {
-        myProcess(value, ctx,null, out);
+    public void processElement2(Message message, KeyedCoProcessFunction<Object, Message, Message, Message>.Context context, Collector<Message> collector) throws Exception {
+        Process.myProcess(message, null, context, collector);
     }
 
     // satisfy where condition
     abstract boolean isValid(Message value);
-
-    public static void myProcess(Message value, KeyedProcessFunction<Object, Message, Message>.Context ctx, KeyedCoProcessFunction<Object, Message, Message, Message>.Context ctxCor, Collector<Message> out) throws Exception {
-
-
-
-        out.collect(value);
-    }
-
 }

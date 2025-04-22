@@ -4,21 +4,29 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SideOutputDataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
-import org.example.highjoin.entities.Entity;
-import org.example.highjoin.entities.LineItem;
+import org.example.highjoin.entities.Message;
+import org.example.highjoin.entities.Operation;
+import org.example.highjoin.entities.Relation;
+import org.example.highjoin.functions.CustomerProcess;
+import org.example.highjoin.functions.LineItemProcess;
+import org.example.highjoin.functions.NationProcess;
+import org.example.highjoin.functions.OrdersProcess;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 public class Job {
-    private static final OutputTag<Entity> lineitemTag = new OutputTag<>("lineitem");
-    private static final OutputTag<Entity> ordersTag = new OutputTag<>("orders");
-    private static final OutputTag<Entity> customerTag = new OutputTag<>("customer");
-    private static final OutputTag<Entity> nationTag = new OutputTag<>("nation");
+    private static final OutputTag<Message> lineitemTag = new OutputTag<>("lineitem");
+    private static final OutputTag<Message> ordersTag = new OutputTag<>("orders");
+    private static final OutputTag<Message> customerTag = new OutputTag<>("customer");
+    private static final OutputTag<Message> nationTag = new OutputTag<>("nation");
 
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -29,26 +37,26 @@ public class Job {
         String inputPath = "D:\\javacode\\Cquirrel-Frontend-master\\DemoTools\\DataGenerator\\output_data.csv";
         String outputPath = "D:\\javacode\\Cquirrel-Frontend-master\\DemoTools\\DataGenerator\\q10result.csv";
 
-        DataStream<Entity> inputStream = getStream(env, inputPath);
-        DataStream<Entity> orders = inputStream.getSideOutput(ordersTag);
-        DataStream<Entity> lineitem = inputStream.getSideOutput(lineitemTag);
-        DataStream<Entity> nation = inputStream.getSideOutput(nationTag);
-        DataStream<Entity> customer = inputStream.getSideOutput(customerTag);
+        SingleOutputStreamOperator<Message> inputStream = getStream(env, inputPath);
+        SideOutputDataStream<Message> orders = inputStream.getSideOutput(ordersTag);
+        SideOutputDataStream<Message> lineitem = inputStream.getSideOutput(lineitemTag);
+        SideOutputDataStream<Message> nation = inputStream.getSideOutput(nationTag);
+        SideOutputDataStream<Message> customer = inputStream.getSideOutput(customerTag);
 
-        DataStream<Entity> nationS = nation.keyBy(i -> i.getKey())
-                .process(new Q10NationProcessFunction());
+        SingleOutputStreamOperator<Message> nationS = nation.keyBy(i -> i.getKey())
+                .process(new NationProcess());
 
-        DataStream<Entity> customerS = nationS.connect(customer)
+        SingleOutputStreamOperator<Message> customerS = nationS.connect(customer)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new Q10CustomerProcessFunction());
+                .process(new CustomerProcess());
 
-        DataStream<Entity> ordersS = customerS.connect(orders)
+        SingleOutputStreamOperator<Message> ordersS = customerS.connect(orders)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new Q10OrdersProcessFunction());
+                .process(new OrdersProcess());
 
-        DataStream<Entity> lineitemS = ordersS.connect(lineitem)
+        SingleOutputStreamOperator<Message> lineitemS = ordersS.connect(lineitem)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new Q10LineitemProcessFunction());
+                .process(new LineItemProcess());
 
         lineitemS.keyBy(i -> i.getKey())
                 .process(new Q10AggregateProcessFunction())
@@ -59,112 +67,97 @@ public class Job {
         env.execute("Flink Streaming Java API Skeleton");
     }
 
-    private static DataStream<Entity> getStream(StreamExecutionEnvironment env, String dataPath) {
+    private static SingleOutputStreamOperator<Message> getStream(StreamExecutionEnvironment env, String dataPath) {
         DataStream<String> data = env.readTextFile(dataPath).setParallelism(1);
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        final long[] cnt = {0};
 
-        return data.process(new ProcessFunction<String, Entity>() {
+        SingleOutputStreamOperator<Message> process = data.process(new ProcessFunction<String, Message>() {
             @Override
-            public void processElement(String value, Context ctx, Collector<Entity> out) throws Exception {
+            public void processElement(String value, Context ctx, Collector<Message> out) throws Exception {
                 String header = value.substring(0, 3);
                 String[] cells = value.substring(3).split("\\|");
-                String relation = "";
-                String action = "";
-
+                Operation action;
+                Relation relation;
+                HashMap<String, Object> attr = new HashMap<>();
+                ;
+                // tables.sql
                 switch (header) {
                     case "+LI":
-                        action = "Insert";
-                        relation = "lineitem";
-                        cnt[0]++;
-                        ctx.output(lineitemTag, new LineItem(Long.parseLong(cells[0]),
-                                new Object[]{Integer.parseInt(cells[3]), Long.parseLong(cells[0]), Double.parseDouble(cells[5]), cells[8], cells[15], Double.parseDouble(cells[6])},
-                                new String[]{"LINENUMBER", "ORDERKEY", "L_EXTENDEDPRICE", "L_RETURNFLAG", "L_COMMENT", "L_DISCOUNT"},
-                                cnt[0]
-                        ));
+                        action = Operation.INSERT;
+                        relation = Relation.LINEITEM;
+                        attr.put("l_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("l_returnflag", cells[8]);
+                        ctx.output(lineitemTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
                     case "-LI":
-                        action = "Delete";
-                        relation = "lineitem";
-                        cnt[0]++;
-                        ctx.output(lineitemTag, new Entity(
-                                relation, action, Long.parseLong(cells[0]),
-                                new Object[]{Integer.parseInt(cells[3]), Long.parseLong(cells[0]), Double.parseDouble(cells[5]), cells[8], cells[15], Double.parseDouble(cells[6])},
-                                new String[]{"LINENUMBER", "ORDERKEY", "L_EXTENDEDPRICE", "L_RETURNFLAG", "L_COMMENT", "L_DISCOUNT"},
-                                cnt[0]
-                        ));
+                        action = Operation.DELETE;
+                        relation = Relation.LINEITEM;
+                        attr.put("l_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("l_returnflag", cells[8]);
+                        ctx.output(lineitemTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
                     case "+OR":
-                        action = "Insert";
-                        relation = "orders";
-                        cnt[0]++;
-                        ctx.output(ordersTag, new Entity(
-                                relation, action, Long.parseLong(cells[1]),
-                                new Object[]{Long.parseLong(cells[1]), Long.parseLong(cells[0]), format.parse(cells[4]), cells[8]},
-                                new String[]{"CUSTKEY", "ORDERKEY", "O_ORDERDATE", "O_COMMENT"},
-                                cnt[0]
-                        ));
+                        action = Operation.INSERT;
+                        relation = Relation.ORDERS;
+                        attr.put("o_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("o_custkey", Integer.parseInt(cells[1]));
+                        attr.put("o_orderdate", format.parse(cells[4]));
+                        ctx.output(ordersTag, new Message(attr, action, relation, Integer.parseInt(cells[1])));
                         break;
                     case "-OR":
-                        action = "Delete";
-                        relation = "orders";
-                        cnt[0]++;
-                        ctx.output(ordersTag, new Entity(
-                                relation, action, Long.parseLong(cells[1]),
-                                new Object[]{Long.parseLong(cells[1]), Long.parseLong(cells[0]), format.parse(cells[4]), cells[8]},
-                                new String[]{"CUSTKEY", "ORDERKEY", "O_ORDERDATE", "O_COMMENT"},
-                                cnt[0]
-                        ));
+                        action = Operation.DELETE;
+                        relation = Relation.ORDERS;
+                        attr.put("o_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("o_custkey", Integer.parseInt(cells[1]));
+                        Date parse = format.parse(cells[4]);
+                        attr.put("o_orderdate", format.parse(cells[4]));
+                        ctx.output(ordersTag, new Message(attr, action, relation, Integer.parseInt(cells[1])));
                         break;
                     case "+CU":
-                        action = "Insert";
-                        relation = "customer";
-                        cnt[0]++;
-                        ctx.output(customerTag, new Entity(
-                                relation, action, Long.parseLong(cells[3]),
-                                new Object[]{Long.parseLong(cells[0]), Long.parseLong(cells[3]), cells[1], Double.parseDouble(cells[5]), cells[4], cells[2], cells[7]},
-                                new String[]{"CUSTKEY", "NATIONKEY", "C_NAME", "C_ACCTBAL", "C_PHONE", "C_ADDRESS", "C_COMMENT"},
-                                cnt[0]
-                        ));
+
+                        action = Operation.INSERT;
+                        relation = Relation.CUSTOMER;
+                        attr.put("c_custkey", Integer.parseInt(cells[0]));
+                        attr.put("c_name", cells[1]);
+                        attr.put("c_address", cells[2]);
+                        attr.put("c_nationkey", Integer.parseInt(cells[3]));
+                        attr.put("c_phone", cells[4]);
+                        attr.put("c_acctbal", Double.parseDouble(cells[5]));
+                        attr.put("c_comment", cells[7]);
+                        ctx.output(customerTag, new Message(attr, action, relation, Integer.parseInt(cells[3])));
                         break;
                     case "-CU":
-                        action = "Delete";
-                        relation = "customer";
-                        cnt[0]++;
-                        ctx.output(customerTag, new Entity(
-                                relation, action, Long.parseLong(cells[3]),
-                                new Object[]{Long.parseLong(cells[0]), Long.parseLong(cells[3]), cells[1], Double.parseDouble(cells[5]), cells[4], cells[2], cells[7]},
-                                new String[]{"CUSTKEY", "NATIONKEY", "C_NAME", "C_ACCTBAL", "C_PHONE", "C_ADDRESS", "C_COMMENT"},
-                                cnt[0]
-                        ));
+                        action = Operation.DELETE;
+                        relation = Relation.CUSTOMER;
+                        attr.put("c_custkey", Integer.parseInt(cells[0]));
+                        attr.put("c_name", cells[1]);
+                        attr.put("c_address", cells[2]);
+                        attr.put("c_nationkey", Integer.parseInt(cells[3]));
+                        attr.put("c_phone", cells[4]);
+                        attr.put("c_acctbal", Double.parseDouble(cells[5]));
+                        attr.put("c_comment", cells[7]);
+                        ctx.output(customerTag, new Message(attr, action, relation, Integer.parseInt(cells[3])));
                         break;
                     case "+NA":
-                        action = "Insert";
-                        relation = "nation";
-                        cnt[0]++;
-                        ctx.output(nationTag, new Entity(
-                                relation, action, Long.parseLong(cells[0]),
-                                new Object[]{Long.parseLong(cells[0]), cells[1], cells[3]},
-                                new String[]{"NATIONKEY", "N_NAME", "N_COMMENT"},
-                                cnt[0]
-                        ));
+                        action = Operation.INSERT;
+                        relation = Relation.NATION;
+                        attr.put("n_nationkey", Integer.parseInt(cells[0]));
+                        attr.put("n_name", cells[1]);
+                        ctx.output(nationTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
                     case "-NA":
-                        action = "Delete";
-                        relation = "nation";
-                        cnt[0]++;
-                        ctx.output(nationTag, new Entity(
-                                relation, action, Long.parseLong(cells[0]),
-                                new Object[]{Long.parseLong(cells[0]), cells[1], cells[3]},
-                                new String[]{"NATIONKEY", "N_NAME", "N_COMMENT"},
-                                cnt[0]
-                        ));
+                        action = Operation.DELETE;
+                        relation = Relation.NATION;
+                        attr.put("n_nationkey", Integer.parseInt(cells[0]));
+                        attr.put("n_name", cells[1]);
+                        ctx.output(nationTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
                     default:
-                        out.collect(new Entity("", "", 0, new Object[]{}, new String[]{}, 0));
+                        out.collect(new Message(attr, Operation.INSERT, Relation.getRelationFromName(header), Integer.parseInt(cells[0])));
                         break;
                 }
             }
         }).setParallelism(1);
+        return process;
     }
 }
