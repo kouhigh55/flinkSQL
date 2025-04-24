@@ -16,7 +16,7 @@ public class CustomerProcess extends CoProcess{
     }
 
     @Override
-    boolean isValid(Message value) {
+    public boolean isValid(Message value) {
         return true;
     }
 }

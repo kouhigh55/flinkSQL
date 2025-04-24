@@ -41,4 +41,14 @@ public class Message {
     public Object getKey() {
         return this.keyValue;
     }
+
+    //clone
+    public Message clone(Operation operation, Relation targetRelation) {
+        Message message = new Message();
+        message.attr = new HashMap<>(this.attr);
+        message.operation = operation;
+        message.targetRelation = targetRelation;
+        message.keyValue = this.keyValue;
+        return message;
+    }
 }

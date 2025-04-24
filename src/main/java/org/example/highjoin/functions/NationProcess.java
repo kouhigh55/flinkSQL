@@ -14,7 +14,7 @@ public class NationProcess extends Process{
     }
 
     @Override
-    boolean isValid(Message value) {
+    public boolean isValid(Message value) {
         return true;
     }
 }

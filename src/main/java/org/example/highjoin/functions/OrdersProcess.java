@@ -24,7 +24,7 @@ public class OrdersProcess extends CoProcess{
     }
 
     @Override
-    boolean isValid(Message msg) {
+    public boolean isValid(Message msg) {
         Date oOrderdate = (Date) msg.attr.get("o_orderdate");
         return oOrderdate.after(start) && oOrderdate.before(end);
     }

@@ -16,7 +16,7 @@ public class LineItemProcess extends CoProcess{
     }
 
     @Override
-    boolean isValid(Message msg) {
+    public boolean isValid(Message msg) {
         String lReturnflag = (String) msg.attr.get("l_returnflag");
         return lReturnflag.equals("R");
     }
