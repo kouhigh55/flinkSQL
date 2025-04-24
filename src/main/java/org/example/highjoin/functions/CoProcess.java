@@ -95,13 +95,14 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 message.setKeyValue(relation.outputKey);
                 if (isRoot) {
                     message.operation = Operation.ADD;
+                    out.collect(message);
                 } else {
                     message.operation = SETALIVE;
-                }
-                // send to fathers
-                for (Relation father : relation.fathers) {
-                    message.targetRelation = father;
-                    out.collect(message);
+                    // send to fathers
+                    for (Relation father : relation.fathers) {
+                        message.targetRelation = father;
+                        out.collect(message);
+                    }
                 }
                 break;
 
@@ -124,13 +125,14 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 message.setKeyValue(relation.outputKey);
                 if (isRoot) {
                     message.operation = Operation.SUBTRACT;
+                    out.collect(message);
                 } else {
                     message.operation = SETDEAD;
-                }
-                // send to fathers
-                for (Relation father : relation.fathers) {
-                    message.targetRelation = father;
-                    out.collect(message);
+                    // send to fathers
+                    for (Relation father : relation.fathers) {
+                        message.targetRelation = father;
+                        out.collect(message);
+                    }
                 }
                 break;
 
@@ -147,13 +149,14 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                     msg.setKeyValue(relation.outputKey);
                     if (isRoot) {
                         msg.operation = Operation.ADD;
+                        out.collect(message);
                     } else {
                         msg.operation = SETALIVE;
-                    }
-                    // send to fathers
-                    for (Relation father : relation.fathers) {
-                        msg.targetRelation = father;
-                        out.collect(msg);
+                        // send to fathers
+                        for (Relation father : relation.fathers) {
+                            msg.targetRelation = father;
+                            out.collect(msg);
+                        }
                     }
                 }
                 break;
@@ -169,13 +172,14 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                     msg.setKeyValue(relation.outputKey);
                     if (isRoot) {
                         msg.operation = Operation.SUBTRACT;
+                        out.collect(message);
                     } else {
                         msg.operation = SETDEAD;
-                    }
-                    // send to fathers
-                    for (Relation father : relation.fathers) {
-                        msg.targetRelation = father;
-                        out.collect(msg);
+                        // send to fathers
+                        for (Relation father : relation.fathers) {
+                            msg.targetRelation = father;
+                            out.collect(msg);
+                        }
                     }
                 }
                 childAttr.get(message.keyValue).clear();

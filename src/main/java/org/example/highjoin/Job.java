@@ -1,5 +1,6 @@
 package org.example.highjoin;
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -57,7 +58,19 @@ public class Job {
 
         lineitemS.keyBy(i -> i.getKey())
                 .process(new GroupbyProcess())
-                .map(x -> x.attr.get("") + ", " + x.getAttributes()[4] + ", " + x.getAttributes()[5])
+                .map(new MapFunction<Message, Object>() {
+                    final String[] attrOrder = new String[]{"c_custkey", "c_name", "revenue", "c_acctbal", "n_name", "c_address","c_phone", "c_comment"};
+                    @Override
+                    public Object map(Message value){
+                        HashMap<String, Object> attr = value.attr;
+                        StringBuilder sb = new StringBuilder();
+                        for (String attrName : attrOrder) {
+                            sb.append(attr.getOrDefault(attrName, null)).append(",");
+                        }
+                        sb.deleteCharAt(sb.length() - 1);
+                        return sb.toString();
+                    }
+                })
                 .writeAsText(outputPath, FileSystem.WriteMode.OVERWRITE)
                 .setParallelism(1);
 
@@ -83,6 +96,8 @@ public class Job {
                         action = Operation.INSERT;
                         relation = Relation.LINEITEM;
                         attr.put("l_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("l_extendedprice", Double.parseDouble(cells[5]));
+                        attr.put("l_discount", Double.parseDouble(cells[6]));
                         attr.put("l_returnflag", cells[8]);
                         ctx.output(lineitemTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
@@ -90,6 +105,8 @@ public class Job {
                         action = Operation.DELETE;
                         relation = Relation.LINEITEM;
                         attr.put("l_orderkey", Integer.parseInt(cells[0]));
+                        attr.put("l_extendedprice", Double.parseDouble(cells[5]));
+                        attr.put("l_discount", Double.parseDouble(cells[6]));
                         attr.put("l_returnflag", cells[8]);
                         ctx.output(lineitemTag, new Message(attr, action, relation, Integer.parseInt(cells[0])));
                         break;
