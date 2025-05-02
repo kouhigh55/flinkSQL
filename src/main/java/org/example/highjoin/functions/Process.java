@@ -86,22 +86,23 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 }
                 //save into index
                 savedData = index.get(message.keyValue);
-                savedData.add(message.clone(SETALIVE, message.targetRelation));
+                savedData.add(message.clone(SETALIVE, message.targetRelation, message.keyValue));
                 // is alive
                 if (cnt.get(message.keyValue) < childNum) {
                     return;
                 }
                 // join childAttr
                 joinChildAttr(message);
-                message.setKeyValue(relation.outputKey);
+                // does not affect saved data
+                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
                     message.operation = Operation.ADD;
                     out.collect(message);
                 } else {
                     message.operation = SETALIVE;
                     // send to fathers
-                    for (Relation father : relation.fathers) {
-                        message.targetRelation = father;
+                    for (String father : relation.fathers) {
+                        message.targetRelation = Relation.getRelationFromName(father);
                         out.collect(message);
                     }
                 }
@@ -113,7 +114,7 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 }
                 //delete from index
                 savedData = index.get(message.keyValue);
-                boolean isRemoved = savedData.remove(message.clone(SETALIVE, message.targetRelation));
+                boolean isRemoved = savedData.remove(message.clone(SETALIVE, message.targetRelation, message.keyValue));
                 if (!isRemoved) {
                     return;
                 }
@@ -123,15 +124,16 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 }
                 // join childAttr
                 joinChildAttr(message);
-                message.setKeyValue(relation.outputKey);
+                // does not affect saved data
+                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
                     message.operation = Operation.SUBTRACT;
                     out.collect(message);
                 } else {
                     message.operation = SETDEAD;
                     // send to fathers
-                    for (Relation father : relation.fathers) {
-                        message.targetRelation = father;
+                    for (String father : relation.fathers) {
+                        message.targetRelation = Relation.getRelationFromName(father);
                         out.collect(message);
                     }
                 }
@@ -147,16 +149,17 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 for (Message msg : savedData) {
                     // join childAttr
                     joinChildAttr(msg);
-                    msg.setKeyValue(relation.outputKey);
+                    // does not affect saved data
+                    msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.ADD;
                         out.collect(message);
                     } else {
                         msg.operation = SETALIVE;
                         // send to fathers
-                        for (Relation father : relation.fathers) {
-                            msg.targetRelation = father;
-                            out.collect(msg);
+                        for (String father : relation.fathers) {
+                            message.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(message);
                         }
                     }
                 }
@@ -170,16 +173,17 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 for (Message msg : savedData) {
                     // join childAttr
                     joinChildAttr(msg);
-                    msg.setKeyValue(relation.outputKey);
+                    // does not affect saved data
+                    msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.SUBTRACT;
                         out.collect(message);
                     } else {
                         msg.operation = SETDEAD;
                         // send to fathers
-                        for (Relation father : relation.fathers) {
-                            msg.targetRelation = father;
-                            out.collect(msg);
+                        for (String father : relation.fathers) {
+                            message.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(message);
                         }
                     }
                 }

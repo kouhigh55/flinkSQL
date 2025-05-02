@@ -1,12 +1,11 @@
 package org.example.highjoin.entities;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public enum Relation {
     LINEITEM("LINEITEM", new String[]{}, new String[]{"ORDERS"},
             new String[]{"l_orderkey", "l_extendedprice","l_discount","l_returnflag",},
-            "l_orderkey", "c_custkey"), // same as group by c_custkey,c_name,c_acctbal,c_phone,n_name,c_address,c_comment
+            "l_orderkey", "o_custkey"), // same as group by c_custkey,c_name,c_acctbal,c_phone,n_name,c_address,c_comment
 
     ORDERS("ORDERS", new String[]{"LINEITEM"}, new String[]{"CUSTOMER"},
             new String[]{"o_orderkey", "o_custkey","o_orderdate"},
@@ -23,39 +22,29 @@ public enum Relation {
 
 
     public final String name;
-    public final ArrayList<Relation> fathers = new ArrayList<>();
-    public final ArrayList<Relation> children = new ArrayList<>();
-    public final ArrayList<Relation> attrName = new ArrayList<>();
+    public final String[] fathers;
+    public final String[] children;
+    public final String[] attrName;
     public final String inputKey;
     public final String outputKey;
 
-    Relation(String name, String inputKey, String outputKey) {
-        this.name = name;
-        this.inputKey = inputKey;
-        this.outputKey = outputKey;
-    }
 
     Relation(String name, String[] fathers, String[] children, String[] attr, String inputKey, String outputKey) {
         this.name = name;
         this.inputKey = inputKey;
         this.outputKey = outputKey;
-        for (String father : fathers) {
-            this.fathers.add(Relation.getRelationFromName(father));
-        }
-        for (String child : children) {
-            this.children.add(Relation.getRelationFromName(child));
-        }
-        for (String attribute : attr) {
-            this.attrName.add(Relation.getRelationFromName(attribute));
-        }
+        this.fathers = fathers;
+        this.children = children;
+        this.attrName = attr;
     }
+
     public static Relation getRelationFromName(String name){
         for (Relation relation : Relation.values()) {
             if (relation.name.toUpperCase().equals(name)) {
                 return relation;
             }
         }
-        return NATION;
+        return null;
     }
 
 }

@@ -9,8 +9,8 @@ public class NationProcess extends Process{
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
         relation = Relation.getRelationFromName("NATION");
-        childNum = relation.children.size();
-        isRoot = relation.fathers.isEmpty();
+        childNum = relation.children.length;
+        isRoot = relation.fathers.length == 0;
     }
 
     @Override

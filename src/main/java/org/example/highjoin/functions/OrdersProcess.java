@@ -16,8 +16,8 @@ public class OrdersProcess extends CoProcess{
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
         relation = Relation.getRelationFromName("ORDERS");
-        childNum = relation.children.size();
-        isRoot = relation.fathers.isEmpty();
+        childNum = relation.children.length;
+        isRoot = relation.fathers.length == 0;
 
         start = format.parse("1993-10-01");
         end = format.parse("1994-01-01");

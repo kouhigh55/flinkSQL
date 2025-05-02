@@ -19,11 +19,11 @@ import static org.example.highjoin.entities.Operation.SETALIVE;
 import static org.example.highjoin.entities.Operation.SETDEAD;
 
 public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, Message> {
-    // key, array(inserted data)
+    // key, array(inserted data with input key value)
     MapState<Object, ArrayList<Message>> index;
-    // key, cnt
+    // key, cnt(number of alived children with input key value)
     MapState<Object, Integer> cnt;
-    // key, assertion key or need joined children data
+    // key, assertion key or need joined children data (save children data, cause state cannot be visited in diff func)
     MapState<Object, HashMap<String, Object>> childAttr;
 
     Relation relation;
@@ -43,8 +43,10 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 }));
         MapStateDescriptor<Object, Integer> cntDescriptor = new MapStateDescriptor<>("cnt", Object.class, Integer.class);
         MapStateDescriptor<Object, HashMap<String, Object>> childAttrDescriptor = new MapStateDescriptor<>("childAttr",
-                TypeInformation.of(new TypeHint<Object>() {}),
-                TypeInformation.of(new TypeHint<HashMap<String, Object>>() {}));
+                TypeInformation.of(new TypeHint<Object>() {
+                }),
+                TypeInformation.of(new TypeHint<HashMap<String, Object>>() {
+                }));
         index = getRuntimeContext().getMapState(indexDescriptor);
         cnt = getRuntimeContext().getMapState(cntDescriptor);
         childAttr = getRuntimeContext().getMapState(childAttrDescriptor);
@@ -85,22 +87,23 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 }
                 //save into index
                 savedData = index.get(message.keyValue);
-                savedData.add(message.clone(SETALIVE, message.targetRelation));
+                savedData.add(message.clone(SETALIVE, message.targetRelation, message.keyValue));
                 // is alive
                 if (cnt.get(message.keyValue) < childNum) {
                     return;
                 }
                 // join childAttr
                 joinChildAttr(message);
-                message.setKeyValue(relation.outputKey);
+                // does not affect saved data
+                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
                     message.operation = Operation.ADD;
                     out.collect(message);
                 } else {
                     message.operation = SETALIVE;
                     // send to fathers
-                    for (Relation father : relation.fathers) {
-                        message.targetRelation = father;
+                    for (String father : relation.fathers) {
+                        message.targetRelation = Relation.getRelationFromName(father);
                         out.collect(message);
                     }
                 }
@@ -112,7 +115,7 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 }
                 //delete from index
                 savedData = index.get(message.keyValue);
-                boolean isRemoved = savedData.remove(message.clone(SETALIVE, message.targetRelation));
+                boolean isRemoved = savedData.remove(message.clone(SETALIVE, message.targetRelation, message.keyValue));
                 if (!isRemoved) {
                     return;
                 }
@@ -122,15 +125,16 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 }
                 // join childAttr
                 joinChildAttr(message);
-                message.setKeyValue(relation.outputKey);
+                // does not affect saved data
+                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
                     message.operation = Operation.SUBTRACT;
                     out.collect(message);
                 } else {
                     message.operation = SETDEAD;
                     // send to fathers
-                    for (Relation father : relation.fathers) {
-                        message.targetRelation = father;
+                    for (String father : relation.fathers) {
+                        message.targetRelation = Relation.getRelationFromName(father);
                         out.collect(message);
                     }
                 }
@@ -146,16 +150,17 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 for (Message msg : savedData) {
                     // join childAttr
                     joinChildAttr(msg);
-                    msg.setKeyValue(relation.outputKey);
+                    // does not affect saved data
+                    msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.ADD;
                         out.collect(message);
                     } else {
                         msg.operation = SETALIVE;
                         // send to fathers
-                        for (Relation father : relation.fathers) {
-                            msg.targetRelation = father;
-                            out.collect(msg);
+                        for (String father : relation.fathers) {
+                            message.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(message);
                         }
                     }
                 }
@@ -169,16 +174,17 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 for (Message msg : savedData) {
                     // join childAttr
                     joinChildAttr(msg);
-                    msg.setKeyValue(relation.outputKey);
+                    // does not affect saved data
+                    msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.SUBTRACT;
                         out.collect(message);
                     } else {
                         msg.operation = SETDEAD;
                         // send to fathers
-                        for (Relation father : relation.fathers) {
-                            msg.targetRelation = father;
-                            out.collect(msg);
+                        for (String father : relation.fathers) {
+                            message.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(message);
                         }
                     }
                 }
@@ -189,7 +195,7 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
     }
 
     // satisfy where condition
-    public boolean isValid(Message value){
+    public boolean isValid(Message value) {
         return true;
     }
 

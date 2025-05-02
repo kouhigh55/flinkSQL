@@ -33,8 +33,14 @@ public class Message {
     }
 
     // set new key from attr
-    public void setKeyValue(String keyName) {
-        this.keyValue = this.attr.get(keyName);
+    public boolean setKeyValue(String keyName) {
+        if(this.attr.containsKey(keyName)){
+            this.keyValue = this.attr.get(keyName);
+            return true;
+        }else{
+            return false;
+        }
+
     }
 
 
@@ -43,12 +49,12 @@ public class Message {
     }
 
     //clone
-    public Message clone(Operation operation, Relation targetRelation) {
+    public Message clone(Operation operation, Relation targetRelation, Object keyValue) {
         Message message = new Message();
         message.attr = new HashMap<>(this.attr);
         message.operation = operation;
         message.targetRelation = targetRelation;
-        message.keyValue = this.keyValue;
+        message.keyValue = keyValue;
         return message;
     }
 }
