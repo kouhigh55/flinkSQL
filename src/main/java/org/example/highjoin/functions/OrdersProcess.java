@@ -19,13 +19,18 @@ public class OrdersProcess extends CoProcess{
         childNum = relation.children.length;
         isRoot = relation.fathers.length == 0;
 
-        start = format.parse("1993-10-01");
+        start = format.parse("1993-9-30");
         end = format.parse("1994-01-01");
     }
 
     @Override
     public boolean isValid(Message msg) {
         Date oOrderdate = (Date) msg.attr.get("o_orderdate");
-        return oOrderdate.after(start) && oOrderdate.before(end);
+        return oOrderdate.after(start) && oOrderdate.before(end);// > , <
+    }
+
+    @Override
+    public boolean isPrint() {
+        return false;
     }
 }

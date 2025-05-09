@@ -8,6 +8,7 @@ import org.apache.flink.util.Collector;
 import org.example.highjoin.entities.Message;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class GroupbyProcess extends KeyedProcessFunction<Object, Message, Message> {
 
@@ -23,6 +24,12 @@ public class GroupbyProcess extends KeyedProcessFunction<Object, Message, Messag
 
     @Override
     public void processElement(Message message, KeyedProcessFunction<Object, Message, Message>.Context context, Collector<Message> collector) throws Exception {
+        if (isPrint() && (Long) message.getKey() == 523) {
+            // 打印message
+            printState();
+            System.out.println("Groupby receive message: " + message);
+            System.out.println("------------------------------");
+        }
         if (!revenue.contains(message.keyValue)) {
             revenue.put(message.keyValue, 0.0);
         }
@@ -57,5 +64,21 @@ public class GroupbyProcess extends KeyedProcessFunction<Object, Message, Messag
         outputMsg.attr = output;
         outputMsg.keyValue = message.keyValue;
         collector.collect(outputMsg);
+    }
+
+    // 遍历打印revenue
+    public void printState() throws Exception {
+        HashSet<Object> keys = new HashSet<>();
+        for (Object key : revenue.keys()) {
+            keys.add(key);
+        }
+        for (Object key : keys) {
+            System.out.println("key: " + key + ", value: " + revenue.get(key));
+        }
+
+    }
+
+    public boolean isPrint() {
+        return false;
     }
 }

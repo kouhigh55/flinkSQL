@@ -66,6 +66,12 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
     }
 
     public void myProcess(Message message, Collector<Message> out) throws Exception {
+        if (isPrint() && (Long) message.getKey() == 523) {
+            // 打印message
+            printState();
+            System.out.println("Process: " + relation + " receive message: " + message);
+        }
+
         if (!index.contains(message.keyValue)) {
             index.put(message.keyValue, new ArrayList<>());
         }
@@ -80,7 +86,7 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
         if (message.targetRelation != relation) {
             return;
         }
-        if(!message.attr.containsKey(relation.inputKey)){
+        if (!message.attr.containsKey(relation.inputKey)) {
             message.attr.put(relation.inputKey, message.keyValue);
         }
 
@@ -98,11 +104,11 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 }
                 // join childAttr
                 joinChildAttr(message);
-                // does not affect saved data
+                // does not affect saved data and key
                 Message msg1 = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
                     msg1.operation = Operation.ADD;
-                    if(msg1.keyValue==null){
+                    if (msg1.keyValue == null) {
                         System.out.println(msg1);
                     }
                     out.collect(msg1);
@@ -198,10 +204,11 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 childAttr.get(message.keyValue).clear();
                 break;
         }
-        if(isPrint()) {
+
+        if (isPrint() && (Long) message.getKey() == 523) {
             // 打印message
-            System.out.println("message: " + message);
             printState();
+            System.out.println("------------------------------");
         }
 
     }
@@ -233,6 +240,7 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
 
     // 遍历打印所有index, cnt, childAttr
     public void printState() throws Exception {
+        System.out.println("Process: " + relation);
         HashSet<Object> allKeys = new HashSet<>();
         for (Object key : index.keys()) {
             allKeys.add(key);
@@ -246,7 +254,6 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
             System.out.println("index: " + index.get(key));
             System.out.println("cnt: " + cnt.get(key));
             System.out.println("childAttr: " + childAttr.get(key));
-            System.out.println("------------------------------");
         }
     }
 

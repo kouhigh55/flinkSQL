@@ -20,4 +20,9 @@ public class LineItemProcess extends CoProcess {
         String lReturnflag = (String) msg.attr.get("l_returnflag");
         return lReturnflag.equals("R");
     }
+
+    @Override
+    public boolean isPrint() {
+        return false;
+    }
 }
