@@ -81,8 +81,11 @@ public class Job {
                 //.print()
                 .writeAsText(outputPath, FileSystem.WriteMode.OVERWRITE)
                 .setParallelism(1);
-
+        // 计算程序运行时间
+        long startTime = System.currentTimeMillis();
         env.execute("Flink High level join start...");
+        long endTime = System.currentTimeMillis();
+        System.out.println("程序运行时间为：" + (endTime - startTime) + "ms");
     }
 
     private static SingleOutputStreamOperator<Message> getStream(StreamExecutionEnvironment env, String dataPath) {
@@ -104,6 +107,7 @@ public class Job {
                         action = Operation.INSERT;
                         relation = Relation.LINEITEM;
                         attr.put("l_orderkey", Long.parseLong(cells[0]));
+                        attr.put("o_orderkey", Long.parseLong(cells[0]));
                         attr.put("l_extendedprice", Double.parseDouble(cells[5]));
                         attr.put("l_discount", Double.parseDouble(cells[6]));
                         attr.put("l_returnflag", cells[8]);
@@ -113,6 +117,7 @@ public class Job {
                         action = Operation.DELETE;
                         relation = Relation.LINEITEM;
                         attr.put("l_orderkey", Long.parseLong(cells[0]));
+                        attr.put("o_orderkey", Long.parseLong(cells[0]));
                         attr.put("l_extendedprice", Double.parseDouble(cells[5]));
                         attr.put("l_discount", Double.parseDouble(cells[6]));
                         attr.put("l_returnflag", cells[8]);
@@ -123,6 +128,7 @@ public class Job {
                         relation = Relation.ORDERS;
                         attr.put("o_orderkey", Long.parseLong(cells[0]));
                         attr.put("o_custkey", Long.parseLong(cells[1]));
+                        attr.put("c_custkey", Long.parseLong(cells[1]));
                         attr.put("o_orderdate", format.parse(cells[4]));
                         ctx.output(ordersTag, new Message(attr, action, relation, Long.parseLong(cells[1])));
                         break;
@@ -131,18 +137,18 @@ public class Job {
                         relation = Relation.ORDERS;
                         attr.put("o_orderkey", Long.parseLong(cells[0]));
                         attr.put("o_custkey", Long.parseLong(cells[1]));
-                        Date parse = format.parse(cells[4]);
+                        attr.put("c_custkey", Long.parseLong(cells[1]));
                         attr.put("o_orderdate", format.parse(cells[4]));
                         ctx.output(ordersTag, new Message(attr, action, relation, Long.parseLong(cells[1])));
                         break;
                     case "+CU":
-
                         action = Operation.INSERT;
                         relation = Relation.CUSTOMER;
                         attr.put("c_custkey", Long.parseLong(cells[0]));
                         attr.put("c_name", cells[1]);
                         attr.put("c_address", cells[2]);
                         attr.put("c_nationkey", Long.parseLong(cells[3]));
+                        attr.put("n_nationkey", Long.parseLong(cells[3]));
                         attr.put("c_phone", cells[4]);
                         attr.put("c_acctbal", Double.parseDouble(cells[5]));
                         attr.put("c_comment", cells[7]);
@@ -155,6 +161,7 @@ public class Job {
                         attr.put("c_name", cells[1]);
                         attr.put("c_address", cells[2]);
                         attr.put("c_nationkey", Long.parseLong(cells[3]));
+                        attr.put("n_nationkey", Long.parseLong(cells[3]));
                         attr.put("c_phone", cells[4]);
                         attr.put("c_acctbal", Double.parseDouble(cells[5]));
                         attr.put("c_comment", cells[7]);

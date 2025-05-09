@@ -14,6 +14,7 @@ import org.example.highjoin.entities.Relation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import static org.example.highjoin.entities.Operation.SETALIVE;
 import static org.example.highjoin.entities.Operation.SETDEAD;
@@ -79,6 +80,9 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
         if (message.targetRelation != relation) {
             return;
         }
+        if(!message.attr.containsKey(relation.inputKey)){
+            message.attr.put(relation.inputKey, message.keyValue);
+        }
 
         switch (message.operation) {
             case INSERT:
@@ -95,16 +99,19 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 // join childAttr
                 joinChildAttr(message);
                 // does not affect saved data
-                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
+                Message msg1 = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
-                    message.operation = Operation.ADD;
-                    out.collect(message);
+                    msg1.operation = Operation.ADD;
+                    if(msg1.keyValue==null){
+                        System.out.println(msg1);
+                    }
+                    out.collect(msg1);
                 } else {
-                    message.operation = SETALIVE;
+                    msg1.operation = SETALIVE;
                     // send to fathers
                     for (String father : relation.fathers) {
-                        message.targetRelation = Relation.getRelationFromName(father);
-                        out.collect(message);
+                        msg1.targetRelation = Relation.getRelationFromName(father);
+                        out.collect(msg1);
                     }
                 }
                 break;
@@ -126,16 +133,16 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                 // join childAttr
                 joinChildAttr(message);
                 // does not affect saved data
-                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
+                Message msg2 = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
-                    message.operation = Operation.SUBTRACT;
-                    out.collect(message);
+                    msg2.operation = Operation.SUBTRACT;
+                    out.collect(msg2);
                 } else {
-                    message.operation = SETDEAD;
+                    msg2.operation = SETDEAD;
                     // send to fathers
                     for (String father : relation.fathers) {
-                        message.targetRelation = Relation.getRelationFromName(father);
-                        out.collect(message);
+                        msg2.targetRelation = Relation.getRelationFromName(father);
+                        out.collect(msg2);
                     }
                 }
                 break;
@@ -154,13 +161,13 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                     msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.ADD;
-                        out.collect(message);
+                        out.collect(msg);
                     } else {
                         msg.operation = SETALIVE;
                         // send to fathers
                         for (String father : relation.fathers) {
-                            message.targetRelation = Relation.getRelationFromName(father);
-                            out.collect(message);
+                            msg.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(msg);
                         }
                     }
                 }
@@ -178,18 +185,23 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
                     msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.SUBTRACT;
-                        out.collect(message);
+                        out.collect(msg);
                     } else {
                         msg.operation = SETDEAD;
                         // send to fathers
                         for (String father : relation.fathers) {
-                            message.targetRelation = Relation.getRelationFromName(father);
-                            out.collect(message);
+                            msg.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(msg);
                         }
                     }
                 }
                 childAttr.get(message.keyValue).clear();
                 break;
+        }
+        if(isPrint()) {
+            // 打印message
+            System.out.println("message: " + message);
+            printState();
         }
 
     }
@@ -208,5 +220,37 @@ public class CoProcess extends KeyedCoProcessFunction<Object, Message, Message, 
         if (stringObjectHashMap != null && !stringObjectHashMap.isEmpty()) {
             message.attr.putAll(stringObjectHashMap);
         }
+    }
+
+    // 打印当前key对应的state
+    public void printState(Message message) throws Exception {
+        System.out.println("key: " + message.keyValue);
+        System.out.println("index: " + index.get(message.keyValue));
+        System.out.println("cnt: " + cnt.get(message.keyValue));
+        System.out.println("childAttr: " + childAttr.get(message.keyValue));
+        System.out.println("------------------------------");
+    }
+
+    // 遍历打印所有index, cnt, childAttr
+    public void printState() throws Exception {
+        HashSet<Object> allKeys = new HashSet<>();
+        for (Object key : index.keys()) {
+            allKeys.add(key);
+        }
+        for (Object key : cnt.keys()) {
+            allKeys.add(key);
+        }
+
+        for (Object key : allKeys) {
+            System.out.println("key: " + key);
+            System.out.println("index: " + index.get(key));
+            System.out.println("cnt: " + cnt.get(key));
+            System.out.println("childAttr: " + childAttr.get(key));
+            System.out.println("------------------------------");
+        }
+    }
+
+    public boolean isPrint() {
+        return false;
     }
 }

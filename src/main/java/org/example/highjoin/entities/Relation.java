@@ -5,15 +5,15 @@ import java.util.ArrayList;
 public enum Relation {
     LINEITEM("LINEITEM", new String[]{}, new String[]{"ORDERS"},
             new String[]{"l_orderkey", "l_extendedprice","l_discount","l_returnflag",},
-            "l_orderkey", "o_custkey"), // same as group by c_custkey,c_name,c_acctbal,c_phone,n_name,c_address,c_comment
+            "o_orderkey", "c_custkey"), // same as group by c_custkey,c_name,c_acctbal,c_phone,n_name,c_address,c_comment
 
     ORDERS("ORDERS", new String[]{"LINEITEM"}, new String[]{"CUSTOMER"},
             new String[]{"o_orderkey", "o_custkey","o_orderdate"},
-            "o_custkey", "o_orderkey"),
+            "c_custkey", "o_orderkey"),
 
     CUSTOMER("CUSTOMER", new String[]{"ORDERS"}, new String[]{"NATION"},
             new String[]{"c_custkey", "c_name", "c_address", "c_nationkey", "c_phone", "c_acctbal","c_comment"},
-            "c_nationkey", "c_custkey"),
+            "n_nationkey", "c_custkey"),
 
     NATION("NATION", new String[]{"CUSTOMER"}, new String[]{},
             new String[]{"n_nationkey", "n_name"},

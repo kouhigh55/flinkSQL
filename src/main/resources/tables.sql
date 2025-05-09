@@ -7,62 +7,18 @@ CREATE TABLE IF NOT EXISTS tpch1g.nation (
   `n_dummy`      VARCHAR(10),
   PRIMARY KEY (`n_nationkey`));
 
--- region
-CREATE TABLE IF NOT EXISTS tpch1g.region (
-  `r_regionkey`  INT,
-  `r_name`       CHAR(25),
-  `r_comment`    VARCHAR(152),
-  `r_dummy`      VARCHAR(10),
-  PRIMARY KEY (`r_regionkey`));
-
--- supplier
-CREATE TABLE IF NOT EXISTS tpch1g.supplier (
-  `s_suppkey`     INT,
-  `s_name`        CHAR(25),
-  `s_address`     VARCHAR(40),
-  `s_nationkey`   INT,
-  `s_phone`       CHAR(15),
-  `s_acctbal`     DECIMAL(15,2),
-  `s_comment`     VARCHAR(101),
-  `s_dummy` varchar(10),
-  PRIMARY KEY (`s_suppkey`));
-
 -- customer
 CREATE TABLE IF NOT EXISTS tpch1g.customer (
-  `c_custkey`     INT,
-  `c_name`        VARCHAR(25),
-  `c_address`     VARCHAR(40),
-  `c_nationkey`   INT,
-  `c_phone`       CHAR(15),
-  `c_acctbal`     DECIMAL(15,2),
-  `c_mktsegment`  CHAR(10),
-  `c_comment`     VARCHAR(117),
-  `c_dummy`       VARCHAR(10),
-  PRIMARY KEY (`c_custkey`));
-
--- part
-CREATE TABLE IF NOT EXISTS tpch1g.part (
-  `p_partkey`     INT,
-  `p_name`        VARCHAR(55),
-  `p_mfgr`        CHAR(25),
-  `p_brand`       CHAR(10),
-  `p_type`        VARCHAR(25),
-  `p_size`        INT,
-  `p_container`   CHAR(10),
-  `p_retailprice` DECIMAL(15,2) ,
-  `p_comment`     VARCHAR(23) ,
-  `p_dummy`       VARCHAR(10),
-  PRIMARY KEY (`p_partkey`));
-
--- partsupp
-CREATE TABLE IF NOT EXISTS tpch1g.partsupp (
-  `ps_partkey`     INT,
-  `ps_suppkey`     INT,
-  `ps_availqty`    INT,
-  `ps_supplycost`  DECIMAL(15,2),
-  `ps_comment`     VARCHAR(199),
-  `ps_dummy`       VARCHAR(10),
-  PRIMARY KEY (`ps_partkey`));
+`c_custkey`     INT,
+`c_name`        VARCHAR(25),
+`c_address`     VARCHAR(40),
+`c_nationkey`   INT,
+`c_phone`       CHAR(15),
+`c_acctbal`     DECIMAL(15,2),
+`c_mktsegment`  CHAR(10),
+`c_comment`     VARCHAR(117),
+`c_dummy`       VARCHAR(10),
+PRIMARY KEY (`c_custkey`));
 
 -- orders
 CREATE TABLE IF NOT EXISTS tpch1g.orders (
@@ -97,3 +53,51 @@ CREATE TABLE IF NOT EXISTS tpch1g.lineitem (
   `l_shipmode`    CHAR(10),
   `l_comment`     VARCHAR(44),
   `l_dummy`       VARCHAR(10));
+
+
+-- region
+CREATE TABLE IF NOT EXISTS tpch1g.region (
+  `r_regionkey`  INT,
+  `r_name`       CHAR(25),
+  `r_comment`    VARCHAR(152),
+  `r_dummy`      VARCHAR(10),
+  PRIMARY KEY (`r_regionkey`));
+
+-- supplier
+CREATE TABLE IF NOT EXISTS tpch1g.supplier (
+  `s_suppkey`     INT,
+  `s_name`        CHAR(25),
+  `s_address`     VARCHAR(40),
+  `s_nationkey`   INT,
+  `s_phone`       CHAR(15),
+  `s_acctbal`     DECIMAL(15,2),
+  `s_comment`     VARCHAR(101),
+  `s_dummy` varchar(10),
+  PRIMARY KEY (`s_suppkey`));
+
+
+
+-- part
+CREATE TABLE IF NOT EXISTS tpch1g.part (
+  `p_partkey`     INT,
+  `p_name`        VARCHAR(55),
+  `p_mfgr`        CHAR(25),
+  `p_brand`       CHAR(10),
+  `p_type`        VARCHAR(25),
+  `p_size`        INT,
+  `p_container`   CHAR(10),
+  `p_retailprice` DECIMAL(15,2) ,
+  `p_comment`     VARCHAR(23) ,
+  `p_dummy`       VARCHAR(10),
+  PRIMARY KEY (`p_partkey`));
+
+-- partsupp
+CREATE TABLE IF NOT EXISTS tpch1g.partsupp (
+  `ps_partkey`     INT,
+  `ps_suppkey`     INT,
+  `ps_availqty`    INT,
+  `ps_supplycost`  DECIMAL(15,2),
+  `ps_comment`     VARCHAR(199),
+  `ps_dummy`       VARCHAR(10),
+  PRIMARY KEY (`ps_partkey`));
+

@@ -19,4 +19,11 @@ public class CustomerProcess extends CoProcess{
     public boolean isValid(Message value) {
         return true;
     }
+
+    @Override
+    public boolean isPrint() {
+        return false;
+    }
+
+
 }

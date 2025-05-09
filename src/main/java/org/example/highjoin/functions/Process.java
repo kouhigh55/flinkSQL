@@ -94,16 +94,16 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 // join childAttr
                 joinChildAttr(message);
                 // does not affect saved data
-                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
+                Message msg1 = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
-                    message.operation = Operation.ADD;
-                    out.collect(message);
+                    msg1.operation = Operation.ADD;
+                    out.collect(msg1);
                 } else {
-                    message.operation = SETALIVE;
+                    msg1.operation = SETALIVE;
                     // send to fathers
                     for (String father : relation.fathers) {
-                        message.targetRelation = Relation.getRelationFromName(father);
-                        out.collect(message);
+                        msg1.targetRelation = Relation.getRelationFromName(father);
+                        out.collect(msg1);
                     }
                 }
                 break;
@@ -125,16 +125,16 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                 // join childAttr
                 joinChildAttr(message);
                 // does not affect saved data
-                message = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
+                Message msg2 = message.clone(message.operation, message.targetRelation, message.attr.get(relation.outputKey));
                 if (isRoot) {
-                    message.operation = Operation.SUBTRACT;
-                    out.collect(message);
+                    msg2.operation = Operation.SUBTRACT;
+                    out.collect(msg2);
                 } else {
-                    message.operation = SETDEAD;
+                    msg2.operation = SETDEAD;
                     // send to fathers
                     for (String father : relation.fathers) {
-                        message.targetRelation = Relation.getRelationFromName(father);
-                        out.collect(message);
+                        msg2.targetRelation = Relation.getRelationFromName(father);
+                        out.collect(msg2);
                     }
                 }
                 break;
@@ -153,13 +153,13 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                     msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.ADD;
-                        out.collect(message);
+                        out.collect(msg);
                     } else {
                         msg.operation = SETALIVE;
                         // send to fathers
                         for (String father : relation.fathers) {
-                            message.targetRelation = Relation.getRelationFromName(father);
-                            out.collect(message);
+                            msg.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(msg);
                         }
                     }
                 }
@@ -177,13 +177,13 @@ public class Process extends KeyedProcessFunction<Object, Message, Message> {
                     msg = msg.clone(msg.operation, msg.targetRelation, msg.attr.get(relation.outputKey));
                     if (isRoot) {
                         msg.operation = Operation.SUBTRACT;
-                        out.collect(message);
+                        out.collect(msg);
                     } else {
                         msg.operation = SETDEAD;
                         // send to fathers
                         for (String father : relation.fathers) {
-                            message.targetRelation = Relation.getRelationFromName(father);
-                            out.collect(message);
+                            msg.targetRelation = Relation.getRelationFromName(father);
+                            out.collect(msg);
                         }
                     }
                 }
