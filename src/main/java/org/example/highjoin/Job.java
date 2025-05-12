@@ -6,12 +6,10 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSink;
-import org.apache.flink.streaming.api.datastream.SideOutputDataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 import org.example.highjoin.entities.Message;
@@ -22,6 +20,7 @@ import org.example.highjoin.functions.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class Job {
     private static final OutputTag<Message> lineitemTag = new OutputTag<>("lineitem"){};
@@ -47,23 +46,28 @@ public class Job {
         SideOutputDataStream<Message> nation = inputStream.getSideOutput(nationTag);
         SideOutputDataStream<Message> customer = inputStream.getSideOutput(customerTag);
 
+        int parallelism = 16;
         SingleOutputStreamOperator<Message> nationS = nation.keyBy(i -> i.getKey())
-                .process(new NationProcess());
+                .process(new NationProcess())
+                .name("Nation Process").setParallelism(parallelism);
 
         SingleOutputStreamOperator<Message> customerS = nationS.connect(customer)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new CustomerProcess());
+                .process(new CustomerProcess())
+                .name("Customer Process").setParallelism(parallelism);;
 
         SingleOutputStreamOperator<Message> ordersS = customerS.connect(orders)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new OrdersProcess());
+                .process(new OrdersProcess())
+                .name("Orders Process").setParallelism(parallelism);
 
         SingleOutputStreamOperator<Message> lineitemS = ordersS.connect(lineitem)
                 .keyBy(i -> i.getKey(), i -> i.getKey())
-                .process(new LineItemProcess());
+                .process(new LineItemProcess())
+                .name("LineItem Process").setParallelism(parallelism);
 
         DataStreamSink<Object> objectDataStreamSink = lineitemS.keyBy(i -> i.getKey())
-                .process(new GroupbyProcess())
+                .process(new GroupbyProcess()).name("GroupBy Process").setParallelism(parallelism)
                 .map(new MapFunction<Message, Object>() {
                     final String[] attrOrder = new String[]{"c_custkey", "c_name", "revenue", "c_acctbal", "n_name", "c_address", "c_phone", "c_comment"};
 
@@ -77,15 +81,40 @@ public class Job {
                         sb.deleteCharAt(sb.length() - 1);
                         return sb.toString();
                     }
-                })
+                }).setParallelism(parallelism)
                 //.print()
                 .writeAsText(outputPath, FileSystem.WriteMode.OVERWRITE)
                 .setParallelism(1);
+
+
+
+//        // 添加一个无限空源以保持作业运行
+//        DataStreamSource<Long> infiniteSource = env.addSource(new SourceFunction<Long>() {
+//            private volatile boolean isRunning = true;
+//            @Override
+//            public void run(SourceContext<Long> ctx) throws Exception {
+//                while (isRunning) {
+//                    ctx.collect(System.currentTimeMillis());
+//                    Thread.sleep(1000);
+//                }
+//            }
+//            @Override
+//            public void cancel() {
+//                isRunning = false;
+//            }
+//        });
+//        // 将无限空源连接到流水线，确保作业不终止
+//        infiniteSource.map(value -> null);
+
+
         // 计算程序运行时间
         long startTime = System.currentTimeMillis();
         env.execute("Flink High level join start...");
         long endTime = System.currentTimeMillis();
         System.out.println("程序运行时间为：" + (endTime - startTime) + "ms");
+
+
+
     }
 
     private static SingleOutputStreamOperator<Message> getStream(StreamExecutionEnvironment env, String dataPath) {
